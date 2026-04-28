@@ -15,19 +15,19 @@ import tensorflow as tf
 from tensorflow import keras
 
 # --- Configurações globais ---
-CSV_PATH = "./iot23_combined.csv"
+CSV_PATH = "./csv/iot23_combined.csv"
 RANDOM_STATE = 42       # semente para reprodutibilidade
 TEST_SIZE = 0.2         # 20% dos dados reservados para teste
 BATCH_SIZE = 2048       # número de amostras processadas por passo de gradiente
-EPOCHS = 10             # número máximo de épocas de treinamento
+EPOCHS = 40             # número máximo de épocas de treinamento
 
 # Colunas a remover: índice redundante e IPs (não contribuem para o aprendizado)
-DROP_COLS = ["Unnamed: 0", "id.orig_h", "id.resp_h"]
+DROP_COLS = ["Unnamed: 0", "id.orig_h", "id.resp_h", "id.orig_p", "id.resp_p"]
 TARGET_COL = "label"    # coluna alvo que será prevista
 
 # Colunas numéricas contínuas que precisam de normalização
 NUMERIC_COLS = [
-    "id.orig_p", "id.resp_p", "duration",
+    "duration",
     "orig_bytes", "resp_bytes", "missed_bytes",
     "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes",
 ]
@@ -122,6 +122,28 @@ def build_mlp(input_dim: int) -> keras.Model:
     return model
 
 
+def convert_to_tflite(model: keras.Model, output_path: str = "mlp_iot23.tflite"):
+    """
+    Converte o modelo Keras para o formato TensorFlow Lite (.tflite).
+    """
+    converter = tf.lite.TFLiteConverter.from_keras_model(model)
+
+    # Quantização dinâmica: converte pesos de float32 para int8 em tempo de conversão.
+    # Reduz o tamanho do modelo em ~4x e acelera a inferência na maioria dos dispositivos.
+    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+
+    tflite_model = converter.convert()
+
+    with open(output_path, "wb") as f:
+        f.write(tflite_model)
+
+    original_kb = model.count_params() * 4 / 1024
+    tflite_kb = len(tflite_model) / 1024
+    print(f"\nModelo TFLite salvo em {output_path}")
+    print(f"  Tamanho estimado Keras:  {original_kb:.1f} KB")
+    print(f"  Tamanho TFLite (int8):   {tflite_kb:.1f} KB")
+
+
 def main():
     print("Carregando e preprocessando dados...")
     X_train, X_test, y_train, y_test, scaler = load_and_preprocess(CSV_PATH)
@@ -138,13 +160,13 @@ def main():
     model = build_mlp(input_dim=X_train.shape[1])
     model.summary()
 
-    callbacks = [
-        # Para o treino se a val_loss não melhorar por 3 épocas seguidas
-        # e restaura os pesos da melhor época
-        keras.callbacks.EarlyStopping(patience=3, restore_best_weights=True),
-        # Reduz o learning rate pela metade se a val_loss estabilizar por 2 épocas
-        keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=2),
-    ]
+    # callbacks = [
+    #     # Para o treino se a val_loss não melhorar por 3 épocas seguidas
+    #     # e restaura os pesos da melhor época
+    #     keras.callbacks.EarlyStopping(patience=3, restore_best_weights=True),
+    #     # Reduz o learning rate pela metade se a val_loss estabilizar por 2 épocas
+    #     keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=2),
+    # ]
 
     print("\nIniciando treinamento...")
     history = model.fit(
@@ -153,7 +175,7 @@ def main():
         epochs=EPOCHS,
         batch_size=BATCH_SIZE,
         class_weight=class_weight,
-        callbacks=callbacks,
+        # callbacks=callbacks,
     )
 
     # Plota a acurácia de treino e teste por época para visualizar o aprendizado
@@ -180,6 +202,9 @@ def main():
     # Salva o modelo treinado em disco no formato Keras nativo
     model.save("mlp_iot23.keras")
     print("\nModelo salvo em mlp_iot23.keras")
+
+    convert_to_tflite(model)
+
 
 
 if __name__ == "__main__":
