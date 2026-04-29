@@ -1,0 +1,5 @@
+services:
+  mlp:
+    build: .
+    volumes:
+      - .:/usr/src/app # .:/usr/src/app monta o diretório local dentro do container,
