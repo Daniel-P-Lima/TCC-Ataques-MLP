@@ -1,20 +1,9 @@
 import pandas as pd
-import ipaddress
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
-def isIPv4(ip_str: str):
-    return ipaddress.ip_address(ip_str).version == 4
-
-def isIPv6(ip_str: str):
-    return ipaddress.ip_address(ip_str).version == 6
-
-def ipStrToInt(ip_str: str):
-    return int(ipaddress.ip_address(ip_str))
-
-def ipStrToIntHigh(ip_str: str):
-    return ipStrToInt(ip_str) >> 64
-
-def ipStrToIntLow(ip_str: str):
-    return ipStrToInt(ip_str) & ((1 << 64) - 1)
+RANDOM_STATE = 42
+GENERATE_STD_DATA = True
 
 # Files in IoTScenarios can be acquired in https://www.stratosphereips.org/datasets-iot23 (lighter version of the dataset)
 
@@ -106,7 +95,27 @@ df['resp_bytes'] = df['resp_bytes'].str.replace('-','0')
 
 df.fillna(-1, inplace=True)
 
-print(df.head(5))
-print()
+# Remove C&C-Mirai due to low amount of instances
+df = df[df["label"] != "C&C-Mirai"]
 
-df.to_csv("iot23_combined.csv", index=False)
+if GENERATE_STD_DATA:
+    X = df
+    y = X["label"]
+
+    X = X.drop("label", axis=1)
+
+    print(y.value_counts())
+
+    Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.30, random_state=RANDOM_STATE, stratify=y)
+
+    scaler = StandardScaler()
+
+    Xtrain = scaler.fit_transform(Xtrain)
+    Xtest = scaler.transform(Xtest)
+
+    pd.DataFrame(Xtrain).to_csv("../Data/Xtrain.csv", index=False)
+    pd.DataFrame(Xtest).to_csv("../Data/Xtest.csv", index=False)
+    pd.DataFrame(ytrain).to_csv("../Data/ytrain.csv", index=False)
+    pd.DataFrame(ytest).to_csv("../Data/ytest.csv", index=False)
+else:
+    df.to_csv("../Data/iot23_combined.csv", index=False)

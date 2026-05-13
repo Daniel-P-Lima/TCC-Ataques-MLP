@@ -7,18 +7,22 @@ from sklearn.ensemble import RandomForestClassifier
 from iTreeFile import exportClassifierTreeToFile, printClassifierTree
 
 RANDOM_STATE = 42
+USE_STD_DATA = True
 
-X = pd.read_csv("../Data/iot23_combined.csv")
+if USE_STD_DATA:
+    Xtrain = pd.read_csv("../Data/Xtrain.csv")
+    Xtest = pd.read_csv("../Data/Xtest.csv")
+    ytrain = pd.read_csv("../Data/ytrain.csv")
+    ytest = pd.read_csv("../Data/ytest.csv")
+else:
+    X = pd.read_csv("../Data/iot23_combined.csv")
 
-# Remove C&C-Mirai, due to low amount of instances
-X = X[X["label"] != "C&C-Mirai"]
+    y = X["label"]
+    X = X.drop("label", axis=1)
 
-y = X["label"]
-X = X.drop("label", axis=1)
+    print(y.value_counts())
 
-print(y.value_counts())
-
-Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.30, random_state=RANDOM_STATE, stratify=y)
+    Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.30, random_state=RANDOM_STATE, stratify=y)
 
 clf = RandomForestClassifier(random_state=RANDOM_STATE, n_estimators=50, max_depth=None)
 
