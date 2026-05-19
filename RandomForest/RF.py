@@ -24,16 +24,16 @@ else:
 
     Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.30, random_state=RANDOM_STATE, stratify=y)
 
-clf = RandomForestClassifier(random_state=RANDOM_STATE, n_estimators=50, max_depth=None)
+clf = RandomForestClassifier(random_state=RANDOM_STATE, n_estimators=26, max_depth=None)
 
 clf.fit(Xtrain, ytrain)
 
 depths = [tree.get_depth() for tree in clf.estimators_]
 print(depths)
 
-exportClassifierTreeToFile(clf)
+#exportClassifierTreeToFile(clf)
 
-#print(clf.classes_)
+print(f"classes: {clf.classes_}")
 
 # print(Xtest.iloc[[0]])
 # print()
@@ -41,11 +41,13 @@ exportClassifierTreeToFile(clf)
 
 y_pred = clf.predict(Xtest)
 
+print(y_pred[0])
+
 # print(y_pred)
 
-print(classification_report(ytest, y_pred))
+#print(classification_report(ytest, y_pred))
 
-Xtest.to_csv("../Data/Xtest.csv", index=False)
+#Xtest.to_csv("../Data/Xtest.csv", index=False)
 
 # cm = confusion_matrix(ytest, y_pred, labels=y.unique())
 
