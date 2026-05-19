@@ -35,13 +35,13 @@ print(depths)
 
 print(f"classes: {clf.classes_}")
 
-# print(Xtest.iloc[[0]])
-# print()
-# y_pred = clf.predict(Xtest.iloc[[0]])
+print(Xtest.iloc[[0]])
+print()
+y_pred = clf.predict(Xtest.iloc[[0]])
 
-y_pred = clf.predict(Xtest)
+# y_pred = clf.predict(Xtest)
 
-print(y_pred[0])
+print(y_pred)
 
 # print(y_pred)
 

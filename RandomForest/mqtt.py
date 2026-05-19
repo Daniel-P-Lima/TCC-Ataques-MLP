@@ -27,17 +27,18 @@ if __name__ == "__main__":
     client.loop_start()
 
     with open(f"{FILE_PATHNAME}.csv", "r") as input_file:
-        with open(f"{FILE_PATHNAME}.bin", "wb") as output_file:
-            input_file.readline() # consume header
+        input_file.readline() # consume header
 
-            for line in input_file:
-                line = line.strip()
-                features = line.split(',')
-                splitListFormat(features)
-                pack = struct.pack(f"<f{'I' * 7}{'?' * 16}", *features)
-                client.publish("/esp32/sub", payload=pack, qos=0)
+        for line in input_file:
+            features = line.strip().split(',')
+            splitListFormat(features)
 
-                break
+            pack = struct.pack(f"<f{'I' * 7}{'?' * 16}", *features)
+            
+            result = client.publish("/esp32/sub", payload=pack, qos=1)
+            result.wait_for_publish()
+
+            break
     
     client.loop_stop()
     client.disconnect()

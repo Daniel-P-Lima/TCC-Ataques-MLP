@@ -151,34 +151,6 @@ static void mqtt_app_start(void)
     esp_mqtt_client_start(client);
 }
 
-// void fileToinstance(Instance* instance, const char* filename)
-// {
-//     Instance instance;
-
-//     std::ifstream file{filename, std::ios::binary};
-
-//     file.read(reinterpret_cast<char*>(&instance), sizeof(Instance));
-
-//     file.close();
-
-//     return instance;
-// }
-
-// void readInputFile(uint8_t file_index)
-// {
-//     // char strBuf[strlen(BIN_TREE_PATH) + 2];
-
-//     // sprintf(strBuf, BIN_TREE_PATH, file_index);
-
-//     // FILE* file = fopen(strBuf, "rb");
-
-//     fread(&node_count, sizeof(node_count), 1, file);
-
-//     fread(&arena, sizeof(Node), node_count, file);
-
-//     fclose(file);
-// }
-
 float getAttribute(int idx)
 {
     switch(idx)
@@ -224,11 +196,7 @@ uint8_t fit()
 
     for(uint8_t i = 0; i < TREE_COUNT; i++)
     {
-        //readInputFile(i);
-        uint16_t* node_count = (uint16_t*)(TREES[i]);
-        node_count++;
-
-        Node *arena = (Node*)(node_count);
+        Node *arena = (Node*)(TREES[i]);
         Node *it = arena;
         bool is_leaf = false;
 

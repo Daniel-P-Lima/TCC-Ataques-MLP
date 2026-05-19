@@ -98,24 +98,22 @@ df.fillna(-1, inplace=True)
 # Remove C&C-Mirai due to low amount of instances
 df = df[df["label"] != "C&C-Mirai"]
 
+X = df
+y = X["label"]
+
+X = X.drop("label", axis=1)
+
+print(y.value_counts())
+
+Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.30, random_state=RANDOM_STATE, stratify=y)
+
 if GENERATE_STD_DATA:
-    X = df
-    y = X["label"]
-
-    X = X.drop("label", axis=1)
-
-    print(y.value_counts())
-
-    Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.30, random_state=RANDOM_STATE, stratify=y)
-
     scaler = StandardScaler()
 
     Xtrain = scaler.fit_transform(Xtrain)
     Xtest = scaler.transform(Xtest)
 
-    pd.DataFrame(Xtrain).to_csv("../Data/Xtrain.csv", index=False)
-    pd.DataFrame(Xtest).to_csv("../Data/Xtest.csv", index=False)
-    pd.DataFrame(ytrain).to_csv("../Data/ytrain.csv", index=False)
-    pd.DataFrame(ytest).to_csv("../Data/ytest.csv", index=False)
-else:
-    df.to_csv("../Data/iot23_combined.csv", index=False)
+pd.DataFrame(Xtrain).to_csv("../Data/Xtrain.csv", index=False)
+pd.DataFrame(Xtest).to_csv("../Data/Xtest.csv", index=False)
+pd.DataFrame(ytrain).to_csv("../Data/ytrain.csv", index=False)
+pd.DataFrame(ytest).to_csv("../Data/ytest.csv", index=False)
