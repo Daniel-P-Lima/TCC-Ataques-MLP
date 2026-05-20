@@ -1,5 +1,8 @@
 /csv
-*.csv
+/Data/*.csv
 *.exe
 /Preprocessing/IoTScenarios/*
 __pycache__
+build/
+sdkconfig
+sdkconfig.old

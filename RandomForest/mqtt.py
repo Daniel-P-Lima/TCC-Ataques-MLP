@@ -1,8 +1,15 @@
 import paho.mqtt.client as paho
 from paho import mqtt
 import struct
+import numpy as np
+from sklearn.metrics import classification_report
+from time import sleep
+from threading import Event, Timer
 
-FILE_PATHNAME = "../Data/Xtest" # Without extension
+XTEST_PATH = "../Data/Xtest.csv"
+YTEST_PATH = "../Data/ytest.csv"
+
+last_message_event = Event()
 
 def strToBool(str: str):
     return str == "True"
@@ -15,30 +22,88 @@ def splitListFormat(list: list):
         list[i] = types1[i](list[i])
         list[i] = types2[i](list[i])
 
+def on_message(client, userdata, msg):
+    global ypred, ytest, pred_time
+
+    msg = msg.payload.decode("utf-8").split(':')
+
+    ypred.append(int(msg[0]))
+    ytest.append(int(msg[1]))
+    pred_time.append(int(msg[2]))
+
+    print(len(ypred))
+
+    last_message_event.set()
+
 if __name__ == "__main__":
+    labels = ['Attack', 'Benign', 'C&C', 'C&C-FileDownload',
+              'C&C-HeartBeat', 'C&C-HeartBeat-FileDownload',
+              'C&C-Torii', 'DDoS', 'FileDownload', 'Okiru',
+              'PartOfAHorizontalPortScan'
+             ]
+    
+    d = {}
+
+    for i in range(len(labels)):
+        d[labels[i]] = i
+
     client = paho.Client(client_id="", userdata=None, protocol=paho.MQTTv5)
+    client.on_message = on_message
 
     client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
 
     client.username_pw_set("python", "Python123")
 
     client.connect("8fecfa22d79b48eb9d9e2009dd10c430.s1.eu.hivemq.cloud", 8883)
+    client.subscribe("/esp32/pub")
 
     client.loop_start()
 
-    with open(f"{FILE_PATHNAME}.csv", "r") as input_file:
-        input_file.readline() # consume header
+    ypred = []
+    ytest = []
+    pred_time = []
+    cont = 10000
 
-        for line in input_file:
-            features = line.strip().split(',')
-            splitListFormat(features)
+    with open(XTEST_PATH, "r") as xtest_f:
+        with open(YTEST_PATH, "r") as ytest_f:
+            i = 0
+            xtest_f.readline() # consume header
+            ytest_f.readline() # consume header
 
-            pack = struct.pack(f"<f{'I' * 7}{'?' * 16}", *features)
-            
-            result = client.publish("/esp32/sub", payload=pack, qos=1)
-            result.wait_for_publish()
+            for xline in xtest_f:
+                if i == cont:
+                    break
 
-            break
+                yline = ytest_f.readline().strip()
+                features = xline.strip().split(',')
+                splitListFormat(features)
+
+                pack = struct.pack(f"<f{'i' * 7}{'?' * 16}B", *features, int(d[yline]))
+
+                #response_event.clear()
+
+                client.publish("/esp32/sub", payload=pack, qos=0)
+                #result.wait_for_publish()
+                #response_event.wait(timeout=5)
+                sleep(0.01)
+
+                i += 1
     
+    while True:
+        last_message_event.clear()
+
+        received = last_message_event.wait(timeout=10)
+
+        if not received:
+            break
+
     client.loop_stop()
     client.disconnect()
+
+    ypred = np.array(ypred)
+    ytest = np.array(ytest)
+    pred_time = np.array(pred_time)
+
+    print(classification_report(ytest, ypred))
+    print()
+    print(f"avg prediction time: {pred_time.mean()} ms")
