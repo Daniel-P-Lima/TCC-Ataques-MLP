@@ -107,6 +107,6 @@ typedef struct __attribute__((packed)) MqttMessage
 }MqttMessage;
 
 float getAttribute(int idx);
-uint8_t fit();
+uint8_t predict();
 
 #endif

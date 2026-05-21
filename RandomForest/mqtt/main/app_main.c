@@ -32,12 +32,18 @@
 #include "mqtt_client.h"
 
 #include "RF.h"
-#include "esp_timer.h"
+#include "esp_cpu.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
 
 static const char *TAG = "mqtts_example";
 
 static const uint8_t FEATURE_COUNT = 24;
 Instance instance;
+static QueueHandle_t mqtt_queue;
+static esp_mqtt_client_handle_t client = NULL;
 
 /*
  * @brief Event handler registered to receive MQTT events
@@ -90,21 +96,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         {
             ESP_LOGI(TAG, "MQTT_EVENT_DATA");
 
-            MqttMessage* msg = (MqttMessage*)(event->data);
-
-            memcpy(&instance, &(msg->inst), sizeof(Instance));
-
-            char _DstBuf[26];
-            uint8_t* tmp = (uint8_t*)(event->data);
-            tmp += sizeof(Instance) + 1;
-
-            uint64_t start = esp_timer_get_time();
-            uint8_t pred = fit();
-            uint64_t stop = esp_timer_get_time();
-
-            sprintf(_DstBuf, "%" PRIu8 ":%" PRIu8 ":%llu", pred, msg->label, ((stop - start) / 1000));
-
-            esp_mqtt_client_publish(client, "/esp32/pub", _DstBuf, 0, 0, 0);
+            xQueueSend(mqtt_queue, (MqttMessage*)event->data, portMAX_DELAY);
             break;
         }
         case MQTT_EVENT_ERROR:
@@ -134,6 +126,29 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     }
 }
 
+void mqtt_publish_task(void *pv)
+{
+    MqttMessage rcv_msg;
+    char pub_msg[19];
+
+    while(1)
+    {
+        if(xQueueReceive(mqtt_queue, &rcv_msg, portMAX_DELAY))
+        {
+            // to do: tornar instance local
+            instance = rcv_msg.inst;
+
+            uint32_t start = esp_cpu_get_cycle_count();
+            uint8_t pred = predict();
+            uint32_t stop = esp_cpu_get_cycle_count();
+            
+            sprintf(pub_msg, "%" PRIu8 ":%" PRIu8 ":%" PRIu32, pred, rcv_msg.label, (stop - start));
+
+            esp_mqtt_client_publish(client, "/esp32/pub", pub_msg, 0, 0, 0);
+        }
+    }
+}
+
 static void mqtt_app_start(void)
 {
     const esp_mqtt_client_config_t mqtt_cfg = {
@@ -144,10 +159,11 @@ static void mqtt_app_start(void)
             .username = "hivemq.webclient.1779066043059",
             .authentication.password = "LI;@Nwe*M#P07dW4r2cp"
         }
+        //.buffer.size = 4096,
     };
 
     ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    client = esp_mqtt_client_init(&mqtt_cfg);
     /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(client);
@@ -189,9 +205,11 @@ float getAttribute(int idx)
     }
 }
 
-uint8_t fit()
+uint8_t predict()
 {
     uint8_t results[FEATURE_COUNT] = {};
+    memset(results, 0, FEATURE_COUNT);
+
     uint8_t highest = 0;
     uint8_t tie_amount = 1;
     uint8_t ret = 0;
@@ -261,13 +279,14 @@ void app_main(void)
     ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
     ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
 
-    esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
-    esp_log_level_set("mqtt_client", ESP_LOG_VERBOSE);
-    esp_log_level_set("mqtt_example", ESP_LOG_VERBOSE);
-    esp_log_level_set("transport_base", ESP_LOG_VERBOSE);
-    esp_log_level_set("transport", ESP_LOG_VERBOSE);
-    esp_log_level_set("outbox", ESP_LOG_VERBOSE);
+    esp_log_level_set("*", ESP_LOG_ERROR);
+    // esp_log_level_set("*", ESP_LOG_INFO);
+    // esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
+    // esp_log_level_set("mqtt_client", ESP_LOG_VERBOSE);
+    // esp_log_level_set("mqtt_example", ESP_LOG_VERBOSE);
+    // esp_log_level_set("transport_base", ESP_LOG_VERBOSE);
+    // esp_log_level_set("transport", ESP_LOG_VERBOSE);
+    // esp_log_level_set("outbox", ESP_LOG_VERBOSE);
 
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
@@ -280,6 +299,10 @@ void app_main(void)
      * examples/protocols/README.md for more information about this function.
      */
     ESP_ERROR_CHECK(example_connect());
+
+    mqtt_queue = xQueueCreate(10, sizeof(Instance));
+
+    xTaskCreate(mqtt_publish_task, "mqtt_pub", 4096, NULL, 5, NULL);
 
     mqtt_app_start();
 }

@@ -9,6 +9,9 @@ from threading import Event, Timer
 XTEST_PATH = "../Data/Xtest.csv"
 YTEST_PATH = "../Data/ytest.csv"
 
+ESP32_FREQ_MHZ = 320
+MHZ_TO_HZ_MULT = 1e+6
+
 last_message_event = Event()
 
 def strToBool(str: str):
@@ -23,7 +26,7 @@ def splitListFormat(list: list):
         list[i] = types2[i](list[i])
 
 def on_message(client, userdata, msg):
-    global ypred, ytest, pred_time
+    global ypred, ytest, pred_time, received
 
     msg = msg.payload.decode("utf-8").split(':')
 
@@ -33,6 +36,7 @@ def on_message(client, userdata, msg):
 
     print(len(ypred))
 
+    received += 1
     last_message_event.set()
 
 if __name__ == "__main__":
@@ -62,16 +66,18 @@ if __name__ == "__main__":
     ypred = []
     ytest = []
     pred_time = []
-    cont = 10000
+    cont = 1000
+
+    sent = 0
+    received = 0
 
     with open(XTEST_PATH, "r") as xtest_f:
         with open(YTEST_PATH, "r") as ytest_f:
-            i = 0
             xtest_f.readline() # consume header
             ytest_f.readline() # consume header
 
             for xline in xtest_f:
-                if i == cont:
+                if sent == cont:
                     break
 
                 yline = ytest_f.readline().strip()
@@ -80,14 +86,13 @@ if __name__ == "__main__":
 
                 pack = struct.pack(f"<f{'i' * 7}{'?' * 16}B", *features, int(d[yline]))
 
-                #response_event.clear()
-
+                while sent - received >= 10:
+                    sleep(0.1)
+                
                 client.publish("/esp32/sub", payload=pack, qos=0)
-                #result.wait_for_publish()
-                #response_event.wait(timeout=5)
-                sleep(0.01)
+                # sleep(0.01)
 
-                i += 1
+                sent += 1
     
     while True:
         last_message_event.clear()
@@ -106,4 +111,5 @@ if __name__ == "__main__":
 
     print(classification_report(ytest, ypred))
     print()
-    print(f"avg prediction time: {pred_time.mean()} ms")
+    avg_pred_ms = (pred_time.mean() / (ESP32_FREQ_MHZ * MHZ_TO_HZ_MULT)) * 1000
+    print(f"avg prediction time: {avg_pred_ms} ms")
