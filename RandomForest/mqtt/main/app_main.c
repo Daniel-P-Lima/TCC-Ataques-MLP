@@ -300,7 +300,7 @@ void app_main(void)
      */
     ESP_ERROR_CHECK(example_connect());
 
-    mqtt_queue = xQueueCreate(10, sizeof(Instance));
+    mqtt_queue = xQueueCreate(10, sizeof(MqttMessage));
 
     xTaskCreate(mqtt_publish_task, "mqtt_pub", 4096, NULL, 5, NULL);
 

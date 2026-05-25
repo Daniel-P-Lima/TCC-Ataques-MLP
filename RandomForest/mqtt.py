@@ -12,7 +12,7 @@ YTEST_PATH = "../Data/ytest.csv"
 ESP32_FREQ_MHZ = 320
 MHZ_TO_HZ_MULT = 1e+6
 
-last_message_event = Event()
+# last_message_event = Event()
 
 def strToBool(str: str):
     return str == "True"
@@ -37,7 +37,7 @@ def on_message(client, userdata, msg):
     print(len(ypred))
 
     received += 1
-    last_message_event.set()
+    # last_message_event.set()
 
 if __name__ == "__main__":
     labels = ['Attack', 'Benign', 'C&C', 'C&C-FileDownload',
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     ypred = []
     ytest = []
     pred_time = []
-    cont = 1000
+    cont = 10000
 
     sent = 0
     received = 0
@@ -94,13 +94,16 @@ if __name__ == "__main__":
 
                 sent += 1
     
-    while True:
-        last_message_event.clear()
+    while sent > received:
+        sleep(1)
 
-        received = last_message_event.wait(timeout=10)
+    # while True:
+    #     last_message_event.clear()
 
-        if not received:
-            break
+    #     received = last_message_event.wait(timeout=10)
+
+    #     if not received:
+    #         break
 
     client.loop_stop()
     client.disconnect()
