@@ -14,10 +14,10 @@ import tensorflow as tf
 from tensorflow import keras
 
 # --- Configurações globais ---
-X_TRAIN_CSV_PATH = "Data/iot23_split/Xtrain.csv"
-X_TEST_CSV_PATH = "Data/iot23_split/Xtest.csv"
-Y_TRAIN_CSV_PATH = "Data/iot23_split/ytrain.csv"
-Y_TEST_CSV_PATH = "Data/iot23_split/ytest.csv"
+X_TRAIN_CSV_PATH = "Data/iot23_std/Xtrain.csv"
+X_TEST_CSV_PATH = "Data/iot23_std/Xtest.csv"
+Y_TRAIN_CSV_PATH = "Data/iot23_std/ytrain.csv"
+Y_TEST_CSV_PATH = "Data/iot23_std/ytest.csv"
 
 RANDOM_STATE = 42  # semente para reprodutibilidade
 BATCH_SIZE = 2048  # número de amostras processadas por passo de gradiente
@@ -59,19 +59,24 @@ def build_mlp(input_dim: int, num_classes: int) -> keras.Model:
         # Camada de entrada: define o número de features que o modelo recebe
         keras.layers.Input(shape=(input_dim,)),
 
-        # Primeira camada oculta: 256 neurônios com ativação ReLU
-        keras.layers.Dense(256, activation="relu"),
+        # Primeira camada oculta: 512 neurônios com ativação ReLU
+        keras.layers.Dense(512, activation="relu"),
         # BatchNormalization: estabiliza e acelera o treinamento normalizando as ativações
         keras.layers.BatchNormalization(),
-        # Dropout: desliga 30% dos neurônios aleatoriamente por época para evitar overfitting
-        keras.layers.Dropout(0.3),
+        # Dropout: desliga 20% dos neurônios aleatoriamente por época para evitar overfitting
+        keras.layers.Dropout(0.2),
 
-        # Segunda camada oculta: 128 neurônios
+        # Segunda camada oculta: 256 neurônios
+        keras.layers.Dense(256, activation="relu"),
+        keras.layers.BatchNormalization(),
+        keras.layers.Dropout(0.2),
+
+        # Terceira camada oculta: 128 neurônios
         keras.layers.Dense(128, activation="relu"),
         keras.layers.BatchNormalization(),
-        keras.layers.Dropout(0.3),
+        keras.layers.Dropout(0.2),
 
-        # Terceira camada oculta: 64 neurônios (sem Dropout, mais próximo da saída)
+        # Quarta camada oculta: 64 neurônios (sem Dropout, mais próximo da saída)
         keras.layers.Dense(64, activation="relu"),
 
         # Camada de saída: 11 neurônios com softmax → valor entre 0 e 10 (probabilidade de qual ataque ser)

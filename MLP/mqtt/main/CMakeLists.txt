@@ -1,0 +1,16 @@
+idf_component_register(
+    SRCS
+        "app_main.c"
+        "mlp_infer.cpp"
+    PRIV_REQUIRES
+        esp-tflite-micro
+        esp-tls
+        esp_wifi
+        esp_netif
+        esp_event
+        nvs_flash
+    INCLUDE_DIRS
+        "include"
+    EMBED_FILES
+        "model/mlp_iot23.tflite"
+)
