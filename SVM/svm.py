@@ -336,36 +336,30 @@ def exp(
 
 def get_experiments() -> list[dict[str, Any]]:
     return [
-        # Baseline original, preservada para comparação direta com a execução anterior.
+        # === SELECIONADOS: MÍNIMO ESSENCIAL (RÁPIDO) ===
+        
+        # Baseline original já concluído (10k iter, ~5h) - será pulado.
         exp("baseline_C1_iter10000_balanced_auto", C=1.0, max_iter=10000, weight_mode="balanced", dual="auto"),
 
-        # Baseline orientada pela documentação para este dataset: n_samples >> n_features, então dual=False.
-        exp("doc_baseline_C1_iter30000_l2_squared_dualFalse_balanced", C=1.0, max_iter=30000, weight_mode="balanced"),
-        exp("doc_C1_iter50000_l2_squared_dualFalse_balanced", C=1.0, max_iter=50000, weight_mode="balanced"),
-        exp("doc_C1_iter30000_tol1e3_l2_squared_dualFalse_balanced", C=1.0, max_iter=30000, tol=1e-3, weight_mode="balanced"),
+        # Baseline com max_iter reduzido para ser mais rápido (15k em vez de 30k).
+        exp("doc_baseline_C1_iter15000_l2_squared_dualFalse_balanced", C=1.0, max_iter=15000, weight_mode="balanced"),
 
-        # Variação da regularização. C menor significa regularização mais forte.
-        exp("doc_C001_l2_squared_dualFalse_balanced", C=0.01),
-        exp("doc_C01_l2_squared_dualFalse_balanced", C=0.1),
-        exp("doc_C05_l2_squared_dualFalse_balanced", C=0.5),
-        exp("doc_C2_l2_squared_dualFalse_balanced", C=2.0),
-        exp("doc_C10_l2_squared_dualFalse_balanced", C=10.0),
+        # Apenas 2 variações de C importantes para comparação.
+        exp("doc_C01_iter15000_l2_squared_dualFalse_balanced", C=0.1, max_iter=15000),
+        exp("doc_C10_iter15000_l2_squared_dualFalse_balanced", C=10.0, max_iter=15000),
 
-        # Estratégia de pesos das classes. Útil porque classes raras podem gerar pesos balanceados muito altos.
-        exp("doc_C1_l2_squared_dualFalse_noWeight", weight_mode=None),
-        exp("doc_C1_l2_squared_dualFalse_clipped20", weight_mode="clipped_20"),
-        exp("doc_C1_l2_squared_dualFalse_clipped50", weight_mode="clipped_50"),
-        exp("doc_C1_l2_squared_dualFalse_clipped100", weight_mode="clipped_100"),
-
-        # Candidatos a modelos esparsos para futura inferência em C/C++: L1 pode zerar coeficientes.
-        # Combinação válida no LinearSVC: penalty='l1', loss='squared_hinge', dual=False.
-        exp("cpp_sparse_C01_l1_squared_dualFalse_balanced", C=0.1, penalty="l1", loss="squared_hinge", dual=False),
-        exp("cpp_sparse_C1_l1_squared_dualFalse_balanced", C=1.0, penalty="l1", loss="squared_hinge", dual=False),
-        exp("cpp_sparse_C10_l1_squared_dualFalse_balanced", C=10.0, penalty="l1", loss="squared_hinge", dual=False),
-
-        # Comparação opcional com a perda hinge padrão. Isso exige dual=True no LinearSVC.
-        # Pode ser mais lento neste caso, mas é útil como comparação controlada.
-        exp("compare_C1_l2_hinge_dualTrue_balanced", C=1.0, penalty="l2", loss="hinge", dual=True),
+        # L1 sparse para C/C++ (modelo importante).
+        exp("cpp_sparse_C1_iter15000_l1_squared_dualFalse_balanced", C=1.0, max_iter=15000, penalty="l1", loss="squared_hinge", dual=False),
+        
+        # === COMENTADOS: Adicione conforme necessário ===
+        # Experimentos completos (30k+ iter):
+        # exp("doc_baseline_C1_iter30000_l2_squared_dualFalse_balanced", C=1.0, max_iter=30000, weight_mode="balanced"),
+        # exp("doc_C1_iter50000_l2_squared_dualFalse_balanced", C=1.0, max_iter=50000, weight_mode="balanced"),
+        # exp("compare_C1_l2_hinge_dualTrue_balanced", C=1.0, penalty="l2", loss="hinge", dual=True),
+        # exp("doc_C1_l2_squared_dualFalse_clipped50", weight_mode="clipped_50"),
+        # exp("doc_C001_l2_squared_dualFalse_balanced", C=0.01),
+        # exp("doc_C05_l2_squared_dualFalse_balanced", C=0.5),
+        # exp("doc_C2_l2_squared_dualFalse_balanced", C=2.0),
     ]
 
 
