@@ -1,0 +1,35 @@
+/Users/isalu/faculdade/projetoTransformador/coding/TCC-Ataques-MLP/.venv/lib/python3.14/site-packages/sklearn/svm/_base.py:1258: ConvergenceWarning: Liblinear failed to converge, increase the number of iterations.
+  warnings.warn(
+Carregando dados pre-split em Data/ e preprocessando...
+Treino: (1011271, 24) | Teste: (433402, 24)
+Pesos das classes: {np.int64(0): np.float64(33.54021425491692), np.int64(1): np.float64(0.6639444143163468), np.int64(2): np.float64(8.697609013503053), np.int64(3): np.float64(3064.457575757576), np.int64(4): np.float64(376.7775707898659), np.int64(5): np.float64(15322.287878787878), np.int64(6): np.float64(4377.796536796537), np.int64(7): np.float64(0.9463654705666564), np.int64(8): np.float64(10214.858585858587), np.int64(9): np.float64(0.4999577300388142), np.int64(10): np.float64(0.15901169971604126)}
+Iniciando treino do SVM (pode demorar dependendo do dataset)...
+Treinamento concluído
+
+--- Avaliação no conjunto de teste ---
+  accuracy:  0.6510
+  precision: 0.3938
+  recall:    0.4275
+  auc:       0.8652
+
+Classification report:
+              precision    recall  f1-score   support
+
+           0     0.8430    0.9514    0.8940      1174
+           1     0.9996    0.2838    0.4421     59343
+           2     0.0508    0.4150    0.0905      4530
+           3     0.0563    0.6154    0.1032        13
+           4     0.0509    0.4762    0.0919       105
+           5     0.0000    0.0000    0.0000         2
+           6     0.6667    0.2222    0.3333         9
+           7     0.9995    0.8177    0.8995     41633
+           8     0.0000    0.0000    0.0000         4
+           9     0.0000    0.0000    0.0000     78807
+          10     0.6653    0.9210    0.7725    247782
+
+    accuracy                         0.6510    433402
+   macro avg     0.3938    0.4275    0.3297    433402
+weighted avg     0.6161    0.6510    0.5920    433402
+
+ROC salvo em /Users/isalu/faculdade/projetoTransformador/coding/TCC-Ataques-MLP/SVM/svm_roc.png
+Modelo salvo em /Users/isalu/faculdade/projetoTransformador/coding/TCC-Ataques-MLP/SVM/svm_iot23.joblib, scaler em /Users/isalu/faculdade/projetoTransformador/coding/TCC-Ataques-MLP/SVM/svm_scaler.joblib, encoder em /Users/isalu/faculdade/projetoTransformador/coding/TCC-Ataques-MLP/SVM/svm_label_encoder.joblib

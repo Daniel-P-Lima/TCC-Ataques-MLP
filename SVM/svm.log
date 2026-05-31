@@ -1,0 +1,6 @@
+Carregando dados pre-split e preprocessando...
+Treino: (1011271, 24) | Teste: (433402, 24)
+Tag da execução: baseline
+Features usadas: 24
+
+=== Rodando experimento: baseline_C1_iter10000_balanced_auto ===
