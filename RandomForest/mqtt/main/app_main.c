@@ -96,7 +96,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         {
             ESP_LOGI(TAG, "MQTT_EVENT_DATA");
 
-            xQueueSend(mqtt_queue, (MqttMessage*)event->data, portMAX_DELAY);
+            xQueueSend(mqtt_queue, event->data, portMAX_DELAY);
             break;
         }
         case MQTT_EVENT_ERROR:
@@ -129,7 +129,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 void mqtt_publish_task(void *pv)
 {
     MqttMessage rcv_msg;
-    char pub_msg[19];
+    char pub_msg[30];
 
     while(1)
     {
@@ -142,9 +142,11 @@ void mqtt_publish_task(void *pv)
             uint8_t pred = predict();
             uint32_t stop = esp_cpu_get_cycle_count();
             
-            sprintf(pub_msg, "%" PRIu8 ":%" PRIu8 ":%" PRIu32, pred, rcv_msg.label, (stop - start));
+            sprintf(pub_msg, "%" PRIu8 ":%" PRIu8 ":%" PRIu32 ":%" PRIu32, pred, rcv_msg.label, (stop - start), rcv_msg.id);
 
-            esp_mqtt_client_publish(client, "/esp32/pub", pub_msg, 0, 0, 0);
+            // esp_mqtt_client_publish(client, "/esp32/pub", pub_msg, 0, 2, 0);
+            esp_mqtt_client_enqueue(client, "/esp32/pub", pub_msg, 0, 0, 0, true);
+            // ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
         }
     }
 }
@@ -152,14 +154,24 @@ void mqtt_publish_task(void *pv)
 static void mqtt_app_start(void)
 {
     const esp_mqtt_client_config_t mqtt_cfg = {
-        .broker = {
-            .address.uri = "mqtts://8fecfa22d79b48eb9d9e2009dd10c430.s1.eu.hivemq.cloud:8883",
+        .broker = 
+        {
+            // .address.uri = "mqtts://8fecfa22d79b48eb9d9e2009dd10c430.s1.eu.hivemq.cloud:8883",
+            .address.uri = "mqtt://192.168.1.26:1883",
         },
-        .credentials = {
-            .username = "hivemq.webclient.1779066043059",
-            .authentication.password = "LI;@Nwe*M#P07dW4r2cp"
-        }
-        //.buffer.size = 4096,
+        // .credentials = 
+        // {
+        //     .username = "hivemq.webclient.1779066043059",
+        //     .authentication.password = "LI;@Nwe*M#P07dW4r2cp"
+        // },
+        .network = 
+        {
+            .disable_auto_reconnect = false,
+        },
+        .buffer = 
+        {
+            .size = 4096,
+        },
     };
 
     ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
@@ -250,6 +262,8 @@ uint8_t predict()
         }
     }
 
+    // Ensemble voting tie handling
+
     if(tie_amount > 1)
     {
         uint8_t cont = (rand() % tie_amount);
@@ -279,14 +293,19 @@ void app_main(void)
     ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
     ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
 
-    esp_log_level_set("*", ESP_LOG_ERROR);
-    // esp_log_level_set("*", ESP_LOG_INFO);
-    // esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
-    // esp_log_level_set("mqtt_client", ESP_LOG_VERBOSE);
-    // esp_log_level_set("mqtt_example", ESP_LOG_VERBOSE);
-    // esp_log_level_set("transport_base", ESP_LOG_VERBOSE);
-    // esp_log_level_set("transport", ESP_LOG_VERBOSE);
-    // esp_log_level_set("outbox", ESP_LOG_VERBOSE);
+    //esp_log_level_set("*", ESP_LOG_ERROR);
+    esp_log_level_set("*", ESP_LOG_INFO);
+    esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
+    esp_log_level_set("mqtt_client", ESP_LOG_VERBOSE);
+    esp_log_level_set("mqtt_example", ESP_LOG_VERBOSE);
+    esp_log_level_set("transport_base", ESP_LOG_VERBOSE);
+    esp_log_level_set("transport", ESP_LOG_VERBOSE);
+    esp_log_level_set("outbox", ESP_LOG_VERBOSE);
+
+    esp_log_level_set("MQTT_CLIENT", ESP_LOG_DEBUG);
+    esp_log_level_set("TRANSPORT_TCP", ESP_LOG_DEBUG);
+    esp_log_level_set("TRANSPORT_BASE", ESP_LOG_DEBUG);
+    esp_log_level_set("wifi", ESP_LOG_INFO);
 
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());

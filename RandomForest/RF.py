@@ -31,7 +31,7 @@ clf.fit(Xtrain, ytrain)
 depths = [tree.get_depth() for tree in clf.estimators_]
 print(depths)
 
-exportClassifierTreeToFile(clf)
+# exportClassifierTreeToFile(clf)
 
 print(f"classes: {clf.classes_}")
 

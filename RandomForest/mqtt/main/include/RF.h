@@ -104,6 +104,7 @@ typedef struct __attribute__((packed)) MqttMessage
 {
     Instance inst;
     uint8_t label;
+    uint32_t id;
 }MqttMessage;
 
 float getAttribute(int idx);

@@ -1,5 +1,6 @@
 /csv
 /Data/*.csv
+/Data/*/*.csv
 *.exe
 /Preprocessing/IoTScenarios/*
 __pycache__
