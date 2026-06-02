@@ -3,4 +3,33 @@ Treino: (1011271, 24) | Teste: (433402, 24)
 Tag da execução: baseline
 Features usadas: 24
 
-=== Rodando experimento: baseline_C1_iter10000_balanced_auto ===
+=== Pulando experimento já concluído: baseline_C1_iter10000_balanced_auto ===
+
+=== Pulando experimento já concluído: doc_baseline_C1_iter15000_l2_squared_dualFalse_balanced ===
+
+=== Rodando experimento: doc_C01_iter15000_l2_squared_dualFalse_balanced ===
+accuracy=0.6477 | f1_macro=0.3401 | recall_macro=0.3993 | auc_macro_ovr=0.8745 | pred_ms/amostra=0.004411 | convergence_warning=True
+
+=== Rodando experimento: doc_C10_iter15000_l2_squared_dualFalse_balanced ===
+accuracy=0.6510 | f1_macro=0.3294 | recall_macro=0.4273 | auc_macro_ovr=0.8608 | pred_ms/amostra=0.004398 | convergence_warning=True
+
+=== Rodando experimento: cpp_sparse_C1_iter15000_l1_squared_dualFalse_balanced ===
+accuracy=0.6512 | f1_macro=0.3194 | recall_macro=0.4104 | auc_macro_ovr=0.8683 | pred_ms/amostra=0.004362 | convergence_warning=True
+
+Melhor experimento pelo critério definido: doc_C01_iter15000_l2_squared_dualFalse_balanced
+
+Resultados salvos em:
+- SVM/svm_outputs/svm_experiments_results.csv
+- SVM/svm_outputs/svm_experiments_results_sorted.csv
+- SVM/svm_outputs/reports/
+- SVM/svm_outputs/plots/
+- SVM/svm_outputs/models/
+- SVM/svm_outputs/cpp_export/
+
+Ranking resumido:
+                                                   name  accuracy  f1_macro  recall_macro  precision_macro  auc_macro_ovr  prediction_time_per_sample_ms  coef_zero_ratio  n_features  convergence_warning
+        doc_C01_iter15000_l2_squared_dualFalse_balanced  0.647745  0.340081      0.399256         0.476309       0.874514                       0.004411          0.00000          24                 True
+                    baseline_C1_iter10000_balanced_auto  0.651010  0.329768      0.427525         0.393880       0.865202                       0.005159          0.00000          24                 True
+doc_baseline_C1_iter15000_l2_squared_dualFalse_balanced  0.651010  0.329768      0.427525         0.393880       0.865202                       0.005612          0.00000          24                 True
+        doc_C10_iter15000_l2_squared_dualFalse_balanced  0.650982  0.329388      0.427303         0.393545       0.860759                       0.004398          0.00000          24                 True
+  cpp_sparse_C1_iter15000_l1_squared_dualFalse_balanced  0.651195  0.319353      0.410450         0.428494       0.868266                       0.004362          0.30303          24                 True
