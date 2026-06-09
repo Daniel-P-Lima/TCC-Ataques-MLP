@@ -93,8 +93,6 @@ def exportClassifierTreeToFile(rf_clf: RandomForestClassifier):
                 is_leaves[node_id] = True
 
         with open(OUTPUT_FILE_PATH.format(n=clf_index), "wb") as file:
-            file.write(struct.pack("<H", n_nodes))
-            
             for i in range(n_nodes):
                 if is_leaves[i]:
                     predicted = np.argmax(values[i])

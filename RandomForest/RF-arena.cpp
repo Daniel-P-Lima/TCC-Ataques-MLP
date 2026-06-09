@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <algorithm>
 
-const uint8_t TREE_COUNT = 50;
+const uint8_t TREE_COUNT = 26;
 const std::string BIN_TREES_PATH{"./binTrees/iot23-"};
 const std::string FILE_EXTENSION{".bin"};
 

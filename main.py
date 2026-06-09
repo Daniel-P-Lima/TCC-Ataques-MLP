@@ -8,79 +8,52 @@ Tarefa: classificação binária — prever se uma conexão é um ataque (1) ou 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.class_weight import compute_class_weight
 import tensorflow as tf
 from tensorflow import keras
 
 # --- Configurações globais ---
-CSV_PATH = "./csv/iot23_combined.csv"
-RANDOM_STATE = 42       # semente para reprodutibilidade
-TEST_SIZE = 0.2         # 20% dos dados reservados para teste
-BATCH_SIZE = 2048       # número de amostras processadas por passo de gradiente
-EPOCHS = 40             # número máximo de épocas de treinamento
+X_TRAIN_CSV_PATH = "Data/iot23_split/Xtrain.csv"
+X_TEST_CSV_PATH = "Data/iot23_split/Xtest.csv"
+Y_TRAIN_CSV_PATH = "Data/iot23_split/ytrain.csv"
+Y_TEST_CSV_PATH = "Data/iot23_split/ytest.csv"
 
-# Colunas a remover: índice redundante e IPs (não contribuem para o aprendizado)
-DROP_COLS = ["Unnamed: 0", "id.orig_h", "id.resp_h", "id.orig_p", "id.resp_p"]
-TARGET_COL = "label"    # coluna alvo que será prevista
-
-# Colunas numéricas contínuas que precisam de normalização
-NUMERIC_COLS = [
-    "duration",
-    "orig_bytes", "resp_bytes", "missed_bytes",
-    "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes",
-]
+RANDOM_STATE = 42  # semente para reprodutibilidade
+BATCH_SIZE = 2048  # número de amostras processadas por passo de gradiente
+EPOCHS = 40  # número máximo de épocas de treinamento
 
 
-def load_and_preprocess(path: str):
+def load_and_preprocess():
     """
     Carrega o CSV, cria o rótulo binário, divide em treino/teste e normaliza.
 
     Retorna:
         X_train, X_test  — features normalizadas como arrays float32
-        y_train, y_test  — rótulos binários (0=Benign, 1=Ataque)
-        scaler           — objeto StandardScaler ajustado no treino (para uso futuro)
+        y_train, y_test  — labels
     """
-    df = pd.read_csv(path)
+    X_train = pd.read_csv(X_TRAIN_CSV_PATH)
+    X_test = pd.read_csv(X_TEST_CSV_PATH)
+    y_train = pd.read_csv(Y_TRAIN_CSV_PATH)
+    y_test = pd.read_csv(Y_TEST_CSV_PATH)
 
-    # Remove colunas que não agregam informação ao modelo
-    df.drop(columns=[c for c in DROP_COLS if c in df.columns], inplace=True)
+    y_train = y_train.values.ravel() # Compacta o array de dimensão 1-D
+    y_test = y_test.values.ravel() # Compacta o array de dimensão 1-D
 
-    # Converte o rótulo textual em binário: Benign=0, qualquer outro tipo=1 (ataque)
-    y = (df[TARGET_COL] != "Benign").astype(np.float32).values
-    X = df.drop(columns=[TARGET_COL])
-
-    # Exibe a distribuição das classes para verificar desbalanceamento
-    benign = int((y == 0).sum())
-    attack = int((y == 1).sum())
-    print(f"Distribuição — Benign: {benign:,} | Ataque: {attack:,}")
-
-    # Converte colunas booleanas (ex: proto_tcp, conn_state_SF) para float32
-    # pois o TensorFlow não aceita booleanos como entrada
-    bool_cols = X.select_dtypes(include="bool").columns
-    X[bool_cols] = X[bool_cols].astype(np.float32)
-
-    # Divide em treino e teste mantendo a proporção de classes (stratify)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
-    )
-
-    # Normaliza apenas as colunas numéricas contínuas com média=0 e desvio=1.
-    # O scaler é ajustado SOMENTE no treino para evitar vazamento de informação do teste.
-    scaler = StandardScaler()
-    X_train[NUMERIC_COLS] = scaler.fit_transform(X_train[NUMERIC_COLS])
-    X_test[NUMERIC_COLS] = scaler.transform(X_test[NUMERIC_COLS])
-
-    return X_train.values.astype(np.float32), X_test.values.astype(np.float32), y_train, y_test, scaler
+    # Codifica rótulos string ("Benign", "Attack", ...) para inteiros (0, 1, ...)
+    le = LabelEncoder()
+    y_train = le.fit_transform(y_train).astype(np.int32)
+    y_test = le.transform(y_test).astype(np.int32)
+    print(f"Classes codificadas: {list(le.classes_)} → dtype: {y_train.dtype}")
+    return X_train.values.astype(np.float32), X_test.values.astype(np.float32), y_train, y_test
 
 
-def build_mlp(input_dim: int) -> keras.Model:
+def build_mlp(input_dim: int, num_classes: int) -> keras.Model:
     """
     Constrói e compila a MLP para classificação binária.
 
     Arquitetura: 3 camadas ocultas (256 → 128 → 64 neurônios) com BatchNorm e Dropout.
-    Saída: 1 neurônio com sigmoid — produz a probabilidade de ser um ataque.
+    Saída: 11 neurônios com softmax — mostra qual ataque pode ser.
     """
     model = keras.Sequential([
         # Camada de entrada: define o número de features que o modelo recebe
@@ -101,23 +74,18 @@ def build_mlp(input_dim: int) -> keras.Model:
         # Terceira camada oculta: 64 neurônios (sem Dropout, mais próximo da saída)
         keras.layers.Dense(64, activation="relu"),
 
-        # Camada de saída: 1 neurônio com sigmoid → valor entre 0 e 1 (probabilidade de ataque)
-        keras.layers.Dense(1, activation="sigmoid"),
+        # Camada de saída: 11 neurônios com softmax → valor entre 0 e 10 (probabilidade de qual ataque ser)
+        keras.layers.Dense(num_classes, activation="softmax"),
     ])
 
     model.compile(
         # Adam: otimizador adaptativo
         optimizer=keras.optimizers.Adam(learning_rate=1e-3),
         # Binary crossentropy: função de perda padrão para classificação binária
-        loss="binary_crossentropy",
+        loss="sparse_categorical_crossentropy",
         # Métricas acompanhadas durante o treinamento:
         # - accuracy: percentual de acertos
-        # - auc: área sob a curva ROC (quanto mais próximo de 1, melhor)
-        # - precision: dos classificados como ataque, quantos realmente são
-        # - recall: dos ataques reais, quantos o modelo detectou
-        metrics=["accuracy", keras.metrics.AUC(name="auc"),
-                 keras.metrics.Precision(name="precision"),
-                 keras.metrics.Recall(name="recall")],
+        metrics=["accuracy"]
     )
     return model
 
@@ -146,36 +114,38 @@ def convert_to_tflite(model: keras.Model, output_path: str = "mlp_iot23.tflite")
 
 def main():
     print("Carregando e preprocessando dados...")
-    X_train, X_test, y_train, y_test, scaler = load_and_preprocess(CSV_PATH)
-    print(f"Treino: {X_train.shape} | Teste: {X_test.shape}")
+    X_train, X_test, y_train, y_test = load_and_preprocess()
+
+    unique_classes = np.unique(y_train)
+    num_classes = len(unique_classes)
+    print(f"Treino: {X_train.shape} | Teste: {X_test.shape} | Classes detectadas: {num_classes}")
 
     # Calcula pesos inversamente proporcionais à frequência de cada classe.
     # Isso faz o modelo penalizar mais os erros na classe minoritária (Benign),
     # compensando o desbalanceamento do dataset.
-    classes = np.array([0, 1])
-    weights = compute_class_weight("balanced", classes=classes, y=y_train)
-    class_weight = {0: weights[0], 1: weights[1]}
-    print(f"Pesos das classes — Benign: {weights[0]:.3f} | Ataque: {weights[1]:.3f}")
+    weights = compute_class_weight("balanced", classes=unique_classes, y=y_train)
+    class_weight_dict = {i: weights[i] for i in range(num_classes)}
 
-    model = build_mlp(input_dim=X_train.shape[1])
+    model = build_mlp(input_dim=X_train.shape[1], num_classes=num_classes)
     model.summary()
 
-    # callbacks = [
-    #     # Para o treino se a val_loss não melhorar por 3 épocas seguidas
-    #     # e restaura os pesos da melhor época
-    #     keras.callbacks.EarlyStopping(patience=3, restore_best_weights=True),
-    #     # Reduz o learning rate pela metade se a val_loss estabilizar por 2 épocas
-    #     keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=2),
-    # ]
+    callbacks = [
+        # Para o treino se a val_loss não melhorar por 3 épocas seguidas
+        # e restaura os pesos da melhor época
+        keras.callbacks.EarlyStopping(patience=3, restore_best_weights=True),
+        # Reduz o learning rate pela metade se a val_loss estabilizar por 2 épocas
+        keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=2),
+    ]
 
     print("\nIniciando treinamento...")
     history = model.fit(
         X_train, y_train,
-        validation_data=(X_test, y_test),   # avalia no teste ao final de cada época
+        validation_data=(X_test, y_test),  # avalia no teste ao final de cada época
         epochs=EPOCHS,
         batch_size=BATCH_SIZE,
-        class_weight=class_weight,
-        # callbacks=callbacks,
+        class_weight=class_weight_dict,
+        callbacks=callbacks,
+        verbose=1
     )
 
     # Plota a acurácia de treino e teste por época para visualizar o aprendizado
@@ -193,18 +163,14 @@ def main():
     print("Gráfico salvo em accuracy_plot.png")
 
     # Avalia o modelo final no conjunto de teste e exibe todas as métricas
-    results = model.evaluate(X_test, y_test, verbose=0)
-    names = model.metrics_names
-    print("\n--- Resultados no conjunto de teste ---")
-    for name, val in zip(names, results):
-        print(f"  {name}: {val:.4f}")
+    loss, acc = model.evaluate(X_test, y_test, verbose=0)
+    print(f"\nAcurácia final no Teste: {acc:.4f}")
 
     # Salva o modelo treinado em disco no formato Keras nativo
     model.save("mlp_iot23.keras")
     print("\nModelo salvo em mlp_iot23.keras")
 
     convert_to_tflite(model)
-
 
 
 if __name__ == "__main__":

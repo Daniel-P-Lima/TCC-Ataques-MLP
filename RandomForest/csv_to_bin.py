@@ -23,5 +23,5 @@ if __name__ == "__main__":
                 features = line.split(',')
                 del features[8]
                 splitListFormat(features)
-                output_file.write(struct.pack(f"<f{'I' * 7}{'?' * 16}", *features))
+                output_file.write(struct.pack(f"<f{'i' * 7}{'?' * 16}", *features))
                 # print(features)
