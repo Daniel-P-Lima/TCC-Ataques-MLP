@@ -1,0 +1,17 @@
+                            precision    recall  f1-score   support
+
+                    Attack     0.8408    0.9489    0.8916      1174
+                    Benign     0.9996    0.2837    0.4420     59343
+                       C&C     0.0508    0.4152    0.0905      4530
+          C&C-FileDownload     0.0556    0.6154    0.1019        13
+             C&C-HeartBeat     0.0509    0.4762    0.0919       105
+C&C-HeartBeat-FileDownload     0.0000    0.0000    0.0000         2
+                 C&C-Torii     0.6667    0.2222    0.3333         9
+                      DDoS     0.9995    0.8177    0.8995     41633
+              FileDownload     0.0000    0.0000    0.0000         4
+                     Okiru     0.0000    0.0000    0.0000     78807
+ PartOfAHorizontalPortScan     0.6653    0.9210    0.7725    247782
+
+                  accuracy                         0.6510    433402
+                 macro avg     0.3935    0.4273    0.3294    433402
+              weighted avg     0.6161    0.6510    0.5920    433402
