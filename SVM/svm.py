@@ -335,9 +335,7 @@ def exp(
 
 
 def get_experiments() -> list[dict[str, Any]]:
-    return [
-        # === SELECIONADOS: MÍNIMO ESSENCIAL (RÁPIDO) ===
-        
+    return [        
         # Baseline original já concluído (10k iter, ~5h) - será pulado.
         exp("baseline_C1_iter10000_balanced_auto", C=1.0, max_iter=10000, weight_mode="balanced", dual="auto"),
 
@@ -351,7 +349,6 @@ def get_experiments() -> list[dict[str, Any]]:
         # L1 sparse para C/C++ (modelo importante).
         exp("cpp_sparse_C1_iter15000_l1_squared_dualFalse_balanced", C=1.0, max_iter=15000, penalty="l1", loss="squared_hinge", dual=False),
         
-        # === COMENTADOS: Adicione conforme necessário ===
         # Experimentos completos (30k+ iter):
         # exp("doc_baseline_C1_iter30000_l2_squared_dualFalse_balanced", C=1.0, max_iter=30000, weight_mode="balanced"),
         # exp("doc_C1_iter50000_l2_squared_dualFalse_balanced", C=1.0, max_iter=50000, weight_mode="balanced"),
