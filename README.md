@@ -1,10 +1,6 @@
-# Detecção de Ataques em Tráfego de Rede IoT com MLP
+# Detecção de Ataques em Tráfego de Rede IoT
 
-Trabalho de Conclusão de Curso — classificação binária de tráfego de rede IoT usando uma Rede Neural Multilayer Perceptron (MLP) treinada com TensorFlow/Keras.
-
-## Objetivo
-
-Dado um registro de conexão de rede do dataset IoT-23, o modelo prevê se aquela conexão é **benigna (0)** ou um **ataque (1)**.
+Trabalho de Conclusão de Curso — classificação de malware em tráfego de rede IoT.
 
 ---
 
@@ -38,20 +34,6 @@ C&C                           15.100
 
 ---
 
-## Estrutura do Projeto
-
-```
-TCC/
-├── csv/
-│   └── iot23_combined.csv   # dataset
-├── main.py                  # pipeline completo: treino + avaliação + exportação
-├── mlp_iot23.keras          # modelo salvo após treinamento (gerado ao rodar)
-├── mlp_iot23.tflite         # modelo exportado para TensorFlow Lite (gerado ao rodar)
-└── accuracy_plot.png        # gráfico de acurácia treino vs teste (gerado ao rodar)
-```
-
----
-
 ## Instalação
 
 Requer Python 3.9+.
@@ -63,6 +45,9 @@ pip install tensorflow pandas numpy scikit-learn matplotlib
 ---
 
 ## Como Rodar
+
+<details>
+    <summary>MLP</summary>
 
 ```bash
 python3 main.py
@@ -142,3 +127,45 @@ predictions = model.predict(X_new)  # retorna probabilidade [0, 1]
 labels = (predictions > 0.5).astype(int)  # 0=Benign, 1=Ataque
 ```
 
+</details>
+
+<details>
+    <summary>Random Forest</summary>
+
+### Pré-Requisitos
+ESP-IDF (https://github.com/espressif/esp-idf)
+Mosquitto (https://mosquitto.org/download/)
+
+### 1. Dataset
+
+- Faça o download dos arquivos da base IoT23 em https://www.stratosphereips.org/datasets-iot23 (lighter version) e extraia os conteúdos da pasta IoTScenarios na pasta /Preprocessing/IoTScenarios do repositório (mesmo o dataset pré-processado era muito grande para manter no repositório)
+- Execute o código /Preprocesing/preprocessing.py de dentro da pasta /Preprocessing/
+- Os csvs de treino e teste deverão estar na pasta /Data/ após isso
+
+### 2. Geração das Árvores para Embarque
+
+- Execute o código /RandomForest/RF.py de dentro da pasta /RandomForest/
+- A pasta /RandomForest/binTrees/ deve ser preenchida com 26 arquivos binários
+
+### 3. Embarque do Modelo
+
+- É recomendado copiar toda a pasta /RandomForest/mqtt/ para o caminho /<pasta de instalação do esp-idf>/examples/protocols/mqtt/, pois a ferramenta de build, por vezes, não encontra o caminho para dependências
+- Garanta que o arquivo de configuração do Mosquitto possua "listener 1883" e "allow_anonymous true" descomentados
+- Execute o Mosquitto em um dispositivo na rede local
+- Altere o valor da constante ADDR em /<pasta de instalação do esp-idf>/examples/protocols/mqtt/main/app_main.c para o endereço do dispositivo rodando o Mosquitto
+- Execute o `.\export.bat` (Windows) ou `export.sh` (Linux) no terminal na pasta de instalação do esp-idf
+- Navegue, ainda no terminal, para a pasta /<pasta de instalação do esp-idf>/examples/protocols/mqtt/
+- Execute `idf.py menuconfig` e configure as opções abaixo:
+- Serial flasher config -> Flash size (4 MB)
+- Partition Table -> selecione partitions.csv
+- ESP-TLS -> marque Allow potential insecure option, e Skip server certificate verification by default
+- Configure conexão Wi-Fi em Example connection configuration
+- Salve as configurações e saia do menuconfig
+- Execute `idf.py build`
+- Conecte a ESP32 ao computador e identifique a porta de conexão
+- Execute `idf.py -p <PORTA> flash monitor`
+
+### 4. Validação
+- Execute o código /RandomForest/mqtt.py de dentro da pasta /RandomForest
+- No caso de a ESP32 desconectar durante o processo, apenas realize o flash do zero no esp-idf e o código Python irá retransmitir as mensagens não respondidas
+</details>
