@@ -45,6 +45,8 @@ Instance instance;
 static QueueHandle_t mqtt_queue;
 static esp_mqtt_client_handle_t client = NULL;
 
+static const char *ADDR = "mqtt://192.168.1.26:1883";
+
 /*
  * @brief Event handler registered to receive MQTT events
  *
@@ -157,7 +159,7 @@ static void mqtt_app_start(void)
         .broker = 
         {
             // .address.uri = "mqtts://8fecfa22d79b48eb9d9e2009dd10c430.s1.eu.hivemq.cloud:8883",
-            .address.uri = "mqtt://192.168.1.26:1883",
+            .address.uri = ADDR,
         },
         // .credentials = 
         // {
