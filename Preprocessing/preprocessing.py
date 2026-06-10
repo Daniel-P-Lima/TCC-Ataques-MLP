@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 RANDOM_STATE = 42
-GENERATE_STD_DATA = True
+GENERATE_STD_DATA = False
 
 # Files in IoTScenarios can be acquired in https://www.stratosphereips.org/datasets-iot23 (lighter version of the dataset)
 
